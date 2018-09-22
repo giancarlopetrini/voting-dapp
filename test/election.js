@@ -80,28 +80,17 @@ contract('Election', (accounts) => {
         assert.include(err.message, 'Vote already cast from this address', 'error if address votes twice');
       });
   });
-});
 
-// TODO rewrite test
-/*
-it('throws an exception for invalid candidates', () => {
-  let electionInstance;
-  return Election.deployed()
-    .then((instance) => {
-      electionInstance = instance;
-      return electionInstance.vote(99, {
-        from: accounts[1]
+  it('throws an exception for invalid candidates', () => {
+    return Election.deployed()
+      .then((instance) => {
+        return instance.vote(99, {
+          from: accounts[2]
+        });
       })
-    }).then(assert.fail).catch(function (error) {
-      assert(error.message.indexOf('revert') >= 0, "error message must contain revert");
-      return electionInstance.candidates(1);
-    }).then(function (candidate1) {
-      var voteCount = candidate1[2];
-      assert.equal(voteCount, 1, "candidate 1 did not receive any votes");
-      return electionInstance.candidates(2);
-    }).then(function (candidate2) {
-      var voteCount = candidate2[2];
-      assert.equal(voteCount, 0, "candidate 2 did not receive any votes");
-    });
+      .catch((err) => {
+        assert.include(err.message, 'Candidate ID is not in range of candidates', 'error if selecting non existing candidate id');
+      });
+  });
+
 });
-*/
