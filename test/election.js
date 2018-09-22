@@ -39,9 +39,11 @@ contract('Election', (accounts) => {
       .then((instance) => {
         electionInstance = instance;
         candidate = 1;
-        return electionInstance.vote(candidate, {from: accounts[0]});
+        return electionInstance.vote(candidate, {
+          from: accounts[0]
+        });
       })
-      .then((vote)=> {
+      .then((vote) => {
         assert.isDefined(vote.tx, 'successfully generated vote tx id');
         return electionInstance.candidates(candidate);
       })
@@ -51,6 +53,55 @@ contract('Election', (accounts) => {
       })
       .then((voters) => {
         assert.isTrue(voters, 'address added to voters mapping');
+      })
+      .then(() => {
+        return electionInstance.vote(candidate + 1, {
+          from: accounts[0]
+        });
+      })
+      .catch((err) => {
+        assert.include(err.message, 'Vote already cast from this address', 'error if address votes twice');
+      });
+  });
+
+
+  it('throws exception if address tries to vote twice', () => {
+    return Election.deployed()
+      .then((instance) => {
+        let candidate = 1
+        instance.vote(candidate, {
+          from: accounts[1]
+        });
+        return instance.vote(candidate, {
+          from: accounts[1]
+        });
+      })
+      .catch((err) => {
+        assert.include(err.message, 'Vote already cast from this address', 'error if address votes twice');
       });
   });
 });
+
+// TODO rewrite test
+/*
+it('throws an exception for invalid candidates', () => {
+  let electionInstance;
+  return Election.deployed()
+    .then((instance) => {
+      electionInstance = instance;
+      return electionInstance.vote(99, {
+        from: accounts[1]
+      })
+    }).then(assert.fail).catch(function (error) {
+      assert(error.message.indexOf('revert') >= 0, "error message must contain revert");
+      return electionInstance.candidates(1);
+    }).then(function (candidate1) {
+      var voteCount = candidate1[2];
+      assert.equal(voteCount, 1, "candidate 1 did not receive any votes");
+      return electionInstance.candidates(2);
+    }).then(function (candidate2) {
+      var voteCount = candidate2[2];
+      assert.equal(voteCount, 0, "candidate 2 did not receive any votes");
+    });
+});
+*/
