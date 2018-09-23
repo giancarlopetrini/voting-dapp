@@ -29,7 +29,7 @@ contract Election {
     mapping(address => bool) public voters;
 
     // vote takes candidate id, 
-    function vote (uint _candidateId) public {
+    function vote(uint _candidateId) public {
         // require that they haven't voted before
         require(!voters[msg.sender], "Vote already cast from this address");
 
@@ -42,6 +42,9 @@ contract Election {
         // update candidate vote Count, for matched id, based on key
         candidates[_candidateId].voteCount++;
 
+        // trigger voted event
+        emit votedEvent(_candidateId);
     }
 
+    event votedEvent (uint indexed_candidateId);
 }

@@ -93,4 +93,25 @@ contract('Election', (accounts) => {
       });
   });
 
+  it('allows a voter to cast a vote', () => {
+    return Election.deployed()
+      .then((instance) => {
+      electionInstance = instance;
+      candidateId = 2;
+      return electionInstance.vote(candidateId, {
+        from: accounts[3]
+      });
+    })
+    .then((receipt) => {
+      assert.equal(receipt.logs[0].event, 'votedEvent', 'the event type is correct');
+      assert.equal(receipt.logs[0].args.indexed_candidateId.toNumber(), candidateId, 'the candidate id is correct');
+      return electionInstance.voters(accounts[3]);
+    }).then((voted) => {
+      assert(voted, 'the voter was marked as voted');
+      return electionInstance.candidates(candidateId);
+    }).then((candidate) => {
+      assert.equal(candidate[2], 1, "increments the candidate's vote count");
+    });
+  });
+
 });
