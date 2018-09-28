@@ -3,13 +3,17 @@ let Election = artifacts.require('./Election.sol');
 contract('Election', (accounts) => {
   let electionInstance;
 
-  it('initializes with two candidates', function () {
+  it('creates candidates via submission', function () {
+    let instance;
     return Election.deployed()
-      .then((instance) => {
-        return instance.candidatesCount();
-      }).then((count) => {
-        assert.equal(count, 2);
-      });
+      .then((Instance) => {
+        instance = Instance;
+        return instance.addCandidate('Candidate 1', 'democrat');
+      }).then(() => {
+        return instance.addCandidate('Candidate 2', 'republican');
+      })
+      .then(() => instance.candidates())
+      .then(count => assert.equal(count, 2));
   });
 
   it('it initializes the candidates with the correct values', () => {
@@ -22,12 +26,14 @@ contract('Election', (accounts) => {
         assert.equal(candidate[0], 1, 'contains the correct id');
         assert.equal(candidate[1], 'Candidate 1', 'contains the correct name');
         assert.equal(candidate[2], 0, 'contains the correct votes count');
+        assert.equal(candidate[3], 'democrat', 'contains the right party');
         return electionInstance.candidates(2);
       })
       .then((candidate) => {
         assert.equal(candidate[0], 2, 'contains the correct id');
         assert.equal(candidate[1], 'Candidate 2', 'contains the correct name');
         assert.equal(candidate[2], 0, 'contains the correct votes count');
+        assert.equal(candidate[3], 'republican', 'contains the right party');
       });
   });
 
@@ -64,6 +70,21 @@ contract('Election', (accounts) => {
       });
   });
 
+  it('prevents candidate from being added after first vote cast', () => {
+    let instance;
+    return Election.deployed()
+      .then((Instance) => {
+        instance = Instance;
+        return instance.voteTotal();
+      })
+      .then((total) => {
+        assert.equal(total, 1, 'total votes incremented for each prev vote');
+        return instance.addCandidate('TestCand3', 'dem');
+      })
+      .catch((err) => {
+        assert.include(err.message, 'Cannot submit candidate after first vote recorded');
+      });
+  })
 
   it('throws exception if address tries to vote twice', () => {
     return Election.deployed()
@@ -96,22 +117,22 @@ contract('Election', (accounts) => {
   it('allows a voter to cast a vote', () => {
     return Election.deployed()
       .then((instance) => {
-      electionInstance = instance;
-      candidateId = 2;
-      return electionInstance.vote(candidateId, {
-        from: accounts[3]
+        electionInstance = instance;
+        candidateId = 2;
+        return electionInstance.vote(candidateId, {
+          from: accounts[3]
+        });
+      })
+      .then((receipt) => {
+        assert.equal(receipt.logs[0].event, 'votedEvent', 'the event type is correct');
+        assert.equal(receipt.logs[0].args.indexed_candidateId.toNumber(), candidateId, 'the candidate id is correct');
+        return electionInstance.voters(accounts[3]);
+      }).then((voted) => {
+        assert(voted, 'the voter was marked as voted');
+        return electionInstance.candidates(candidateId);
+      }).then((candidate) => {
+        assert.equal(candidate[2], 1, "increments the candidate's vote count");
       });
-    })
-    .then((receipt) => {
-      assert.equal(receipt.logs[0].event, 'votedEvent', 'the event type is correct');
-      assert.equal(receipt.logs[0].args.indexed_candidateId.toNumber(), candidateId, 'the candidate id is correct');
-      return electionInstance.voters(accounts[3]);
-    }).then((voted) => {
-      assert(voted, 'the voter was marked as voted');
-      return electionInstance.candidates(candidateId);
-    }).then((candidate) => {
-      assert.equal(candidate[2], 1, "increments the candidate's vote count");
-    });
   });
 
 });

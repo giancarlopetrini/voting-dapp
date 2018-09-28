@@ -2,15 +2,13 @@ pragma solidity 0.4.24;
 
 contract Election {
     // Constructor
-    constructor() public {
-        addCandidate("Candidate 1");
-        addCandidate("Candidate 2");
-    }
+    constructor() public {}
 
     struct Candidate {
         uint id;
         string name;
         uint voteCount;
+        string party;
     }
 
     // Read/write Candidates
@@ -20,13 +18,21 @@ contract Election {
     uint public candidatesCount;
 
 
-    function addCandidate(string _name) private {
+    function addCandidate(string _name, string _party) public {
+        require(voteTotal == 0, "Cannot submit candidate after first vote recorded");
+
         candidatesCount++;
-        candidates[candidatesCount] = Candidate(candidatesCount, _name, 0);
+        candidates[candidatesCount] = Candidate(candidatesCount, _name, 0, _party);
+
+        emit addCandidateEvent(candidatesCount);
     }
+
+    event addCandidateEvent (uint indexed_candidateId);
 
     // Read/write voters
     mapping(address => bool) public voters;
+
+    uint public voteTotal;
 
     // vote takes candidate id, 
     function vote(uint _candidateId) public {
@@ -41,6 +47,7 @@ contract Election {
 
         // update candidate vote Count, for matched id, based on key
         candidates[_candidateId].voteCount++;
+        voteTotal++;
 
         // trigger voted event
         emit votedEvent(_candidateId);
